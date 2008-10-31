@@ -4,6 +4,7 @@ use warnings;
 use strict;
 use base qw( Mojo::Base );
 use AnyEvent;
+use App::Rasputine::XMPP;
 
 our $VERSION = '0.01';
 
@@ -12,14 +13,23 @@ __PACKAGE__->attr('services', chained => 1, default => {});
 
 __PACKAGE__->attr('alive', chained => 1);
 
-
 sub run {
   my $self = shift;
+  
+  $self->start_xmpp_connection;
   
   my $alive = AnyEvent->condvar;
   $self->alive($alive);
   
   $alive->recv;
+  
+  return;
+}
+
+sub start_xmpp_connection {
+  my $self = shift;
+  
+  App::Rasputine::XMPP->new({ ras => $self })->start;
   
   return;
 }
@@ -50,9 +60,10 @@ Version 0.01
 
       # XMPP XEP-0114 connection
       xmpp => {
+        domain => 'rasputine.simplicidade.org',
         server => '127.0.0.1',
         port   => 5252,
-        secret => 'youwish',
+        secret => 'yeah, right!',
       },
       
       # white-list of supported services

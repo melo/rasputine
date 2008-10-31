@@ -5,7 +5,7 @@ all_from 'lib/App/Rasputine.pm';
 repository 'http://github.com/melo/rasputine';
 
 requires 'AnyEvent' => 0;
-requires 'Net::XMPP2' => 0;
+requires 'Net::XMPP2::Component' => 0;
 requires 'AnyEvent::Handle' => 0;
 requires 'AnyEvent::Socket' => 0;
 requires 'Mojo' => '0.7';
