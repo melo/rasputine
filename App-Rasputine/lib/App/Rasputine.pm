@@ -3,61 +3,79 @@ package App::Rasputine;
 use warnings;
 use strict;
 
+our $VERSION = '0.01';
+
+
+42; # End of App::Rasputine
+
+__END__
+
+=encoding utf8
+
+
 =head1 NAME
 
-App::Rasputine - The great new App::Rasputine!
+App::Rasputine - Because some things never die
+
 
 =head1 VERSION
 
 Version 0.01
 
-=cut
-
-our $VERSION = '0.01';
-
 
 =head1 SYNOPSIS
 
-Quick summary of what the module does.
-
-Perhaps a little code snippet.
-
     use App::Rasputine;
+    
+    my $ras = App::Rasputine->new({
 
-    my $foo = App::Rasputine->new();
-    ...
+      # XMPP XEP-0114 connection
+      xmpp_server => '127.0.0.1',
+      xmpp_port   => 5252,
+      xmpp_secret => 'youwish',
+      
+      # white-list of supported services
+      services => {
+        selva => {
+          host => 'selva.grogue.org',
+          port => 8888,
+          type => 'talker',
+        },
+        
+        moosaico => {
+          host => 'moosaico.org',
+          port => 7777,
+          type => 'moo',
+        },
+      },
+      
+      # Web admin interface
+      # ... keep dreaming... :)
+    });
+
+
+=head1 DESCRIPTION
+
+Rasputine is a XMPP-to-MUD/Moo/Talker systems.
+
 
 =head1 EXPORT
 
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
+This module does not export nothing.
 
-=head1 FUNCTIONS
 
-=head2 function1
-
-=cut
-
-sub function1 {
-}
-
-=head2 function2
-
-=cut
-
-sub function2 {
-}
 
 =head1 AUTHOR
 
 Pedro Melo, C<< <melo at cpan.org> >>
+
+
 
 =head1 BUGS
 
 Please report any bugs or feature requests to C<bug-app-rasputine at rt.cpan.org>, or through
 the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=App-Rasputine>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
-
 
 
 
@@ -93,15 +111,13 @@ L<http://search.cpan.org/dist/App-Rasputine>
 
 =head1 ACKNOWLEDGEMENTS
 
+Kudos to Mind Booster Noori to make me write it.
+
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2008 Pedro Melo, all rights reserved.
+Copyright 2008 Pedro Melo.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
 
-
-=cut
-
-1; # End of App::Rasputine
