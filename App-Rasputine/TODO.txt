@@ -3,7 +3,7 @@ App-Rasputine TODO list
 
  * support presence status:
    * two version of the status, offline and connected;
- * fix UTF8 incoming data?
+ * fix UTF8 incoming data (DONE)
  * support avatars:
    * two versions of the avatar, offline and connected;
  * add a config file:

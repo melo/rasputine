@@ -6,7 +6,7 @@ use base qw( Mojo::Base );
 use Net::XMPP2::Component;
 use Net::XMPP2::Util qw( split_jid bare_jid );
 use Params::Validate qw( :all );
-use Encode qw( encode );
+use Encode qw( encode decode );
 
 our $VERSION = '0.1';
 
@@ -189,8 +189,17 @@ sub message_out {
   $mesg =~ s/\r?\n$//gsm;
   return unless $mesg;
   
+  # Try to encode as utf8 and then latin1
+  # if all fails try direct
+  my $body;
+  foreach my $charset (qw( utf8 latin1 )) {
+    eval { $body = decode('utf8', $mesg, 1) };
+    last unless $@;
+  }
+  $body = $mesg unless $body;
+  
   $self->{conn}->send_message($args{user}, undef, undef,
-    body => $mesg,
+    body => $body,
     from => "$args{service}\@$args{via}/rasputine",
   );
 }
