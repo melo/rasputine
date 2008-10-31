@@ -70,6 +70,27 @@ sub _extract_body {
   return '';
 }
 
+sub message_out {
+  my $self = shift;
+  my %args = validate(@_, {
+    service => { type => SCALAR },
+    user    => { type => SCALAR }, 
+    mesg    => { type => SCALAR },
+    via     => { type => SCALAR }, 
+    gateway => { type => SCALAR }, 
+  });
+  
+  # IM doesn't need the trailing \n
+  my $mesg = $args{mesg};
+  chomp($mesg);
+  return unless $mesg;
+  
+  $self->{conn}->send_message($args{user}, undef, undef,
+    body => $mesg,
+    from => "$args{service}\@$args{via}/rasputine",
+  );
+}
+
 
 ##########################
 # Get the show on the road
