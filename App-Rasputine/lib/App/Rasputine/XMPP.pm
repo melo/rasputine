@@ -184,9 +184,9 @@ sub message_out {
   });
   print STDERR "*** XMPP MESSAGE OUT $args{service} $args{user}\n";
   
-  # IM doesn't need the trailing \n
+  # IM doesn't need the trailing \n and some talkers use \r\n
   my $mesg = $args{mesg};
-  chomp($mesg);
+  $mesg =~ s/\r?\n$//gsm;
   return unless $mesg;
   
   $self->{conn}->send_message($args{user}, undef, undef,
