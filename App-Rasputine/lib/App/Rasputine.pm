@@ -11,6 +11,9 @@ our $VERSION = '0.01';
 __PACKAGE__->attr('xmpp',     chained => 1, default => {});
 __PACKAGE__->attr('services', chained => 1, default => {});
 
+__PACKAGE__->attr('xmpp_gw');
+
+
 __PACKAGE__->attr('alive', chained => 1);
 
 sub run {
@@ -29,7 +32,10 @@ sub run {
 sub start_xmpp_connection {
   my $self = shift;
   
-  App::Rasputine::XMPP->new({ ras => $self })->start;
+  my $xmpp_gw = App::Rasputine::XMPP->new({ ras => $self });
+  $xmpp_gw->start;
+
+  $self->xmpp_gw($xmpp_gw);
   
   return;
 }
