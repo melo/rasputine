@@ -89,7 +89,6 @@ sub send_message {}
 
 sub send_help {
   my $self = shift;
-  my $srv = $self->{service};
   
   my $mesg = <<USAGE;
 Hello there, welcome to Rasputine!
@@ -113,13 +112,7 @@ Available commands:
 See? Not that many commands :)
 USAGE
 
-  $self->{ras}->message_to_user({
-    service => $srv,
-    user    => $self->{user},
-    mesg    => $mesg,
-    via     => $self->{via},
-    gateway => $self->{world}{type},
-  });
+  $self->send_message_to_user({ mesg => $mesg });
   
   return;
 }
@@ -164,6 +157,30 @@ sub new {
   # FIXME: check world is correct?
   
   return $self;
+}
+
+
+################
+# Some shortcuts
+
+sub send_message_to_user {
+  my $self = shift;
+  my %args = validate(@_, {
+    mesg => { type => SCALAR },
+  });
+
+  my $mesg = $args{mesg};
+  return unless $mesg;
+  
+  $self->{ras}->message_to_user({
+    service => $self->{service},
+    user    => $self->{user},
+    mesg    => $mesg,
+    via     => $self->{via},
+    gateway => $self->{world}{type},
+  });
+  
+  return;
 }
 
 
