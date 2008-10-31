@@ -16,6 +16,20 @@ __PACKAGE__->attr('ras');
 
 __PACKAGE__->attr('state', default => 'start');
 
+
+#############################
+# World connection management
+
+sub disconnect {
+  my $self = shift;
+  
+  return unless $self->state eq 'connected';
+  
+  # Disconnect session from world
+  
+  return;
+}
+
 ####################
 # A message, for me?
 

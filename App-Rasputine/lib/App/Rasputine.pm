@@ -64,6 +64,23 @@ sub start_session {
   return $sess;
 }
 
+#########################
+# Deal with user presence
+
+sub user_offline {
+  my $self = shift;
+  my %args = validate(@_, {
+    service => { type => SCALAR }, 
+    user    => { type => SCALAR }, 
+    via     => { type => SCALAR }, 
+  });
+  
+  my $user_session = $self->session_for(%args);
+  return $user_session unless ref($user_session);
+  
+  return $user_session->disconnect();
+}
+
 
 ###################
 # Welcome new users

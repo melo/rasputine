@@ -76,9 +76,42 @@ sub unsubscription_request {
   $self->send_presence($node, 'unsubscribe');  
 }
 
-sub presence_update  {}
+sub presence_update  {
+  my ($self, $node) = @_;
+  
+  my ($service, $via) = split_jid($node->attr('to'));
+  my $from = $node->attr('from');
+  my $user = bare_jid($from);
+  
+  my $resr = $self->resources;
+  
+  $resr->{$user}{$from} = {
+    type => $node->attr('type'),
+  };
+  
+  return;
+}
 
-sub presence_offline {}
+sub presence_offline {
+  my ($self, $node) = @_;
+  
+  my ($service, $via) = split_jid($node->attr('to'));
+  my $from = $node->attr('from');
+  my $user = bare_jid($from);
+  
+  my $resr = $self->resources;
+  delete $resr->{$user}{$from};
+  
+  return if %{$resr->{$user}};
+  
+  $self->{ras}->user_offline({
+    service => $service,
+    user    => $user,
+    via     => $via,
+  });
+  
+  return;
+}
 
 
 ####################
