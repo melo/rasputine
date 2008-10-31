@@ -4,18 +4,23 @@ use strict;
 use warnings;
 use base qw( Mojo::Base );
 use Net::XMPP2::Component;
+use Net::XMPP2::Util qw( split_jid bare_jid );
+use Params::Validate qw( :all );
+
 
 our $VERSION = '0.1';
 
 __PACKAGE__->attr('ras', chained => 1);
 __PACKAGE__->attr('conn', chained => 1);
+__PACKAGE__->attr('resources', default => {});
 
 ####################
 # Message processing
 
 sub message_in {
   my ($self, $conn, $node) = @_;
-
+  my $resr = $self->resources;
+  
   my $from = $node->attr('from');
   my $to   = $node->attr('to');
   my $type = $node->attr('type');
@@ -26,11 +31,31 @@ sub message_in {
   my $body = _extract_body($node);
   return unless $body;
   
-  # Echo service for now
-  $conn->send_message($from, undef, undef,
-    body => "Got: $body",
-    from => $to, # FIXME: must assure presence of resource
-  );
+  my ($service, $via) = split_jid($to);
+  my $bare_to = bare_jid($from);
+
+  my $error = $self->{ras}->message_to_world({
+    service => $service,
+    user    => $bare_to,
+    mesg    => $body,
+    via     => $via,
+    gateway => 'xmpp',
+  });
+  return unless $error;
+  
+  # For now our only message, but should be for error 'service_not_found'
+  # if ($error eq 'service_not_found') {}
+  my $err_mesg = 'These are not the droids you are looking for...';
+  
+  $self->message_out({
+    mesg    => $err_mesg,
+    user    => $bare_to,
+    service => $service,
+    via     => $via,
+    gateway => 'xmpp',
+  });
+  
+  return;
 }
 
 sub _extract_body {
