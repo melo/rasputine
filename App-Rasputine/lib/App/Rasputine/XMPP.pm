@@ -14,12 +14,82 @@ __PACKAGE__->attr('ras', chained => 1);
 __PACKAGE__->attr('conn', chained => 1);
 __PACKAGE__->attr('resources', default => {});
 
+#####################
+# Presence processing
+
+sub presence_in {
+  my ($self, $conn, $node) = @_;
+  my $type = $node->attr('type') || '';
+  
+  if    ($type eq 'probe')       { $self->presence_probe($node)         }
+  elsif ($type eq 'subscribe')   { $self->subscription_request($node)   }
+  elsif ($type eq 'unsubscribe') { $self->unsubscription_request($node) }
+  elsif ($type eq 'unavailable') { $self->presence_offline($node)       }
+  elsif (!$type)                 { $self->presence_update($node)        }
+
+  return;
+}
+
+sub send_presence {
+  my ($self, $node, $type) = @_;
+
+  # We are online by default
+  my $from = $node->attr('from');
+  my $to   = $node->attr('to');
+  
+  $to .= '/rasputine' if !$type || $type eq 'unavailable';
+  
+  $self->{conn}->send_presence($type, undef, 
+    to => $from,
+    from => $to,
+  );
+}
+
+sub presence_probe {
+  my $self = shift;
+  
+  return $self->send_presence(@_);
+}
+
+sub subscription_request {
+  my ($self, $node) = @_;
+  
+  $self->send_presence($node, 'subscribed');
+  $self->send_presence($node, 'subscribe');
+  $self->send_presence($node);
+}
+
+sub unsubscription_request {
+  my ($self, $node) = @_;
+  
+  $self->send_presence($node, 'unavailable');
+  $self->send_presence($node, 'unsubscribed');
+  $self->send_presence($node, 'unsubscribe');  
+}
+
+sub presence_update  {
+  my ($self, $node) = @_;
+  
+  my ($service, $via) = split_jid($node->attr('to'));
+  my $user = bare_jid($node->attr('from'));
+  
+  my $sess = $self->{ras}->session_for({
+    service => $service,
+    user    => $user,
+    via     => $via,
+  });
+}
+
+sub presence_offline {}
+
+
 ####################
 # Message processing
 
 sub message_in {
   my ($self, $conn, $node) = @_;
   my $resr = $self->resources;
+  print STDERR "*** XMPP MESSAGE IN\n";
   
   my $from = $node->attr('from');
   my $to   = $node->attr('to');
@@ -32,16 +102,18 @@ sub message_in {
   return unless $body;
   
   my ($service, $via) = split_jid($to);
-  my $bare_to = bare_jid($from);
+  my $user = bare_jid($from);
 
   my $error = $self->{ras}->message_to_world({
     service => $service,
-    user    => $bare_to,
+    user    => $user,
     mesg    => $body,
     via     => $via,
     gateway => 'xmpp',
   });
   return unless $error;
+  
+  print STDERR "*** XMPP MESSAGE IN ERROR! $error\n";
   
   # For now our only message, but should be for error 'service_not_found'
   # if ($error eq 'service_not_found') {}
@@ -49,7 +121,7 @@ sub message_in {
   
   $self->message_out({
     mesg    => $err_mesg,
-    user    => $bare_to,
+    user    => $user,
     service => $service,
     via     => $via,
     gateway => 'xmpp',
@@ -79,6 +151,7 @@ sub message_out {
     via     => { type => SCALAR }, 
     gateway => { type => SCALAR }, 
   });
+  print STDERR "*** XMPP MESSAGE OUT $args{service} $args{user}\n";
   
   # IM doesn't need the trailing \n
   my $mesg = $args{mesg};
@@ -141,6 +214,7 @@ sub _on_connected {
   $self->{conn}->reg_cb(
     recv_stanza_xml => sub { $self->_on_stanza(@_) },
     message_xml     => sub { $self->message_in(@_) },
+    presence_xml    => sub { $self->presence_in(@_) },
   );
 }
 
