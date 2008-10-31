@@ -4,10 +4,14 @@ use strict;
 use warnings;
 use base qw( Mojo::Base );
 use Params::Validate qw( :all );
+use AnyEvent::Socket;
+use AnyEvent::Handle;
 
 our $VERSION = '0.1';
 
 __PACKAGE__->attr('conn');
+__PACKAGE__->attr('buffer');
+
 __PACKAGE__->attr('user');
 __PACKAGE__->attr('service');
 __PACKAGE__->attr('via');
@@ -20,15 +24,102 @@ __PACKAGE__->attr('state', default => 'start');
 #############################
 # World connection management
 
+sub connect {
+  my $self = shift;
+  my $world = $self->{world};
+
+  tcp_connect $world->{host}, $world->{port}, sub {
+     my ($fh) = @_;
+     
+     if (!$fh) {
+       $self->send_message_to_user({
+         mesg => qq{Connect to world '$self->{service} failed, probably down?'}
+       });
+       return;
+     }
+     
+     $self->state('connected');
+
+     my $conn = AnyEvent::Handle->new(
+       fh       => $fh,
+       on_eof   => sub { $self->close('eof')   },
+       on_error => sub { $self->close('error') },
+     );
+     $self->conn($conn);
+     $conn->push_read(sub { $self->line_in(@_) });
+  };
+}
+
+
 sub disconnect {
   my $self = shift;
   
   return unless $self->state eq 'connected';
   
-  # Disconnect session from world
+  # FIXME: should we send /quit or .quit?
+    
+  return $self->close('disconnect_request');
+}
+
+sub close {
+  my ($self, $reason) = @_;
+
+  return unless $self->state('connected');
+
+  my $conn = $self->{conn};
+  $self->state('offline')->conn(undef);
+  return close($conn->fh);
+}
+
+
+##########
+# World IO
+
+sub line_out {
+  my ($self, $line) = @_;
+  
+  return unless $self->state eq 'connected';
+  
+  $self->{conn}->push_write($line."\n");
+}
+
+sub line_in {
+  my ($self, $handle) = @_;
+
+  my $line = delete $handle->{rbuf};
+  return unless $line;
+  
+  my $buffer = $self->{buffer};
+  if ($buffer) { $buffer .= $line }
+  else         { $buffer  = $line }
+  $self->{buffer} = $buffer;
+  
+  # Collect more lines before sending out a message
+  my $t; $t = AnyEvent->timer(
+    after => 0.2,
+    cb    => sub {
+      $self->send_buffer_to_user;
+      $t = undef;
+    },
+  );
+  
+  # Keep reading...
+  return 0;
+}
+
+sub send_buffer_to_user {
+  my ($self) = @_;
+  
+  my $buffer = delete $self->{buffer};
+  return unless $buffer;
+  
+  $self->send_message_to_user({
+    mesg => $buffer,
+  });
   
   return;
 }
+
 
 ####################
 # A message, for me?
@@ -59,29 +150,35 @@ sub parse_commands {
   
   my ($cmd) = $mesg =~ m{^\s*//(\w+)};
   if (!$cmd) {
-    $self->{ras}->message_to_user({
-      service => $self->{service},
-      user    => $self->{user},
-      mesg    => q{Help your self with '//help'},
-      via     => $args{via},
-      gateway => $self->{world}{type},
-    });
+    $self->send_message_to_user({ mesg => q{Help your self with '//help'} });
     return;
   }
   
-  # FIXME: Deal with commands here
-  $self->{ras}->message_to_user({
-    service => $self->{service},
-    user    => $self->{user},
-    mesg    => qq{Aye, Aye, Sir! '$cmd' understood!},
-    via     => $args{via},
-    gateway => $self->{world}{type},
-  });
+  if ($cmd eq 'help') {
+    $self->send_help;
+  }
+  elsif ($cmd eq 'connect') {
+    $self->connect;
+  }
+  else {
+    $self->send_message_to_user({ mesg => qq{Sorry, I don't understand that} });
+  }
   
   return;
 }
 
-sub send_message {}
+sub send_message {
+  my $self = shift;
+  my %args = validate(@_, {
+    mesg    => { type => SCALAR }, 
+    via     => { type => SCALAR }, 
+    gateway => { type => SCALAR }, 
+  });
+  
+  $self->line_out($args{mesg});
+  
+  return;
+}
 
 
 ##############################################
