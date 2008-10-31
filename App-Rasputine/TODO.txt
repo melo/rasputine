@@ -1,0 +1,16 @@
+App-Rasputine TODO list
+=======================
+
+ * support presence status:
+   * two version of the status, offline and connected;
+ * fix UTF8 incoming data?
+ * support avatars:
+   * two versions of the avatar, offline and connected;
+ * add a config file:
+   * use Config::Any;
+   * support JSON and YAML.
+ * support IQ Disco;
+ * FrenchEncoding filter
+ * Add script to start it up
+
+
