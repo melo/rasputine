@@ -65,6 +65,24 @@ sub start_session {
 }
 
 
+###################
+# Welcome new users
+
+sub welcome_user {
+  my $self = shift;
+  my %args = validate(@_, {
+    service => { type => SCALAR }, 
+    user    => { type => SCALAR }, 
+    via     => { type => SCALAR }, 
+  });
+
+  my $user_session = $self->session_for(%args);
+  return $user_session unless ref($user_session);
+  
+  return $user_session->welcome_user();
+}
+
+
 ##########
 # Messages
 

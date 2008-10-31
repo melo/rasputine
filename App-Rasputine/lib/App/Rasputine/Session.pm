@@ -111,16 +111,24 @@ USAGE
 }
 
 
+##############
+# Welcome user
+
+sub welcome_user {
+  my $self = shift;
+  
+  $self->send_help;
+  
+  return;
+}
+
+
 ######################
 # Start a user session
 
 sub start {
   my $self = shift;
-  my $ras = $self->{ras};
   
-  return unless $self->state eq 'start';
-
-  $self->send_help;  
   $self->state('offline');
   
   return;

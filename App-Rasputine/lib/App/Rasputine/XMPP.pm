@@ -57,6 +57,15 @@ sub subscription_request {
   $self->send_presence($node, 'subscribed');
   $self->send_presence($node, 'subscribe');
   $self->send_presence($node);
+  
+  my ($service, $via) = split_jid($node->attr('to'));
+  my $user = bare_jid($node->attr('from'));
+  
+  $self->{ras}->welcome_user({
+    service => $service,
+    user    => $user,
+    via     => $via,
+  });
 }
 
 sub unsubscription_request {
@@ -67,18 +76,7 @@ sub unsubscription_request {
   $self->send_presence($node, 'unsubscribe');  
 }
 
-sub presence_update  {
-  my ($self, $node) = @_;
-  
-  my ($service, $via) = split_jid($node->attr('to'));
-  my $user = bare_jid($node->attr('from'));
-  
-  my $sess = $self->{ras}->session_for({
-    service => $service,
-    user    => $user,
-    via     => $via,
-  });
-}
+sub presence_update  {}
 
 sub presence_offline {}
 
