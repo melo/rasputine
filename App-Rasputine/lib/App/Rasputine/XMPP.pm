@@ -6,7 +6,7 @@ use base qw( Mojo::Base );
 use Net::XMPP2::Component;
 use Net::XMPP2::Util qw( split_jid bare_jid );
 use Params::Validate qw( :all );
-
+use Encode qw( encode );
 
 our $VERSION = '0.1';
 
@@ -129,7 +129,7 @@ sub message_in {
   # message type must be empty or 'chat'  
   return if $type && $type ne 'chat';
   
-  my $body = _extract_body($node);
+  my $body = encode('utf8', _extract_body($node));
   return unless $body;
   
   my ($service, $via) = split_jid($to);
