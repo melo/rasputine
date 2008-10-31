@@ -5,14 +5,68 @@ use strict;
 use base qw( Mojo::Base );
 use AnyEvent;
 use App::Rasputine::XMPP;
+use App::Rasputine::Session;
+use Params::Validate qw( :all );
 
 our $VERSION = '0.01';
+
+##########################
+# Configuration attributes
 
 __PACKAGE__->attr('xmpp',     chained => 1, default => {});
 __PACKAGE__->attr('services', chained => 1, default => {});
 
 __PACKAGE__->attr('xmpp_gw');
 
+
+#################
+# Session manager
+
+__PACKAGE__->attr('sessions', default => {});
+
+sub session_for {
+  my $self = shift;
+  my %args = validate(@_, {
+    service => { type => SCALAR }, 
+    user    => { type => SCALAR }, 
+    via     => { type => SCALAR }, 
+
+  my $valid_services = $self->services;
+  return 'service_not_found' unless exists $valid_services->{$args{service}};
+  
+  my $sessions = $self->sessions;
+  my $user_session = $sessions->{$args{user}};
+  
+  $user_session = $self->start_session(%args)
+    unless $user_session;
+  
+  return $user_session;
+}
+
+sub start_session {
+  my $self = shift;
+  my $sessions = $self->sessions;
+  my %args = validate(@_, {
+    service => { type => SCALAR }, 
+    user    => { type => SCALAR }, 
+    via     => { type => SCALAR }, 
+  });
+
+  my $valid_services = $self->services;
+  return 'service_not_found' unless exists $valid_services->{$args{service}};
+  
+  my $sess = $sessions->{$args{user}} = App::Rasputine::Session->new({
+    %args,
+    ras => $self,
+  });
+  $sess->start if $sess;
+  
+  return $sess;
+}
+
+
+################
+# Start it up...
 
 __PACKAGE__->attr('alive', chained => 1);
 
