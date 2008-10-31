@@ -30,12 +30,13 @@ sub session_for {
     service => { type => SCALAR }, 
     user    => { type => SCALAR }, 
     via     => { type => SCALAR }, 
+  });
 
   my $valid_services = $self->services;
   return 'service_not_found' unless exists $valid_services->{$args{service}};
   
   my $sessions = $self->sessions;
-  my $user_session = $sessions->{$args{user}};
+  my $user_session = $sessions->{$args{user}}{$args{service}};
   
   $user_session = $self->start_session(%args)
     unless $user_session;
@@ -55,7 +56,7 @@ sub start_session {
   my $valid_services = $self->services;
   return 'service_not_found' unless exists $valid_services->{$args{service}};
   
-  my $sess = $sessions->{$args{user}} = App::Rasputine::Session->new({
+  my $sess = $sessions->{$args{user}}{$args{service}} = App::Rasputine::Session->new({
     %args,
     ras => $self,
   });
