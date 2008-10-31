@@ -2,8 +2,14 @@ package App::Rasputine;
 
 use warnings;
 use strict;
+use base qw( Mojo::Base );
+use Params::Validate;
 
 our $VERSION = '0.01';
+
+__PACKAGE__->attr('xmpp',     chained => 1, default => {});
+__PACKAGE__->attr('services', chained => 1, default => {});
+
 
 
 42; # End of App::Rasputine
@@ -30,9 +36,11 @@ Version 0.01
     my $ras = App::Rasputine->new({
 
       # XMPP XEP-0114 connection
-      xmpp_server => '127.0.0.1',
-      xmpp_port   => 5252,
-      xmpp_secret => 'youwish',
+      xmpp => {
+        server => '127.0.0.1',
+        port   => 5252,
+        secret => 'youwish',
+      },
       
       # white-list of supported services
       services => {
