@@ -65,6 +65,47 @@ sub start_session {
 }
 
 
+##########
+# Messages
+
+sub message_to_world {
+  my $self = shift;
+  my %args = validate(@_, {
+    service => { type => SCALAR }, 
+    user    => { type => SCALAR }, 
+    mesg    => { type => SCALAR }, 
+    via     => { type => SCALAR }, 
+    gateway => { type => SCALAR }, 
+  });
+  
+  my $user_session = $self->session_for({
+    service => $args{service},
+    user    => $args{user},
+    via     => $args{via},
+  });
+  return $user_session unless ref($user_session);
+
+  return $user_session->message_out({
+    mesg    => $args{mesg},
+    via     => $args{via},
+    gateway => $args{gateway},
+  });
+}
+
+sub message_to_user {
+  my $self = shift;
+  my %args = validate(@_, {
+    service => { type => SCALAR },
+    user    => { type => SCALAR }, 
+    mesg    => { type => SCALAR },
+    via     => { type => SCALAR }, 
+    gateway => { type => SCALAR }, 
+  });
+  
+  return $self->xmpp_gw->message_out(%args);
+}
+
+
 ################
 # Start it up...
 
