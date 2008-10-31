@@ -3,13 +3,26 @@ package App::Rasputine;
 use warnings;
 use strict;
 use base qw( Mojo::Base );
-use Params::Validate;
+use AnyEvent;
 
 our $VERSION = '0.01';
 
 __PACKAGE__->attr('xmpp',     chained => 1, default => {});
 __PACKAGE__->attr('services', chained => 1, default => {});
 
+__PACKAGE__->attr('alive', chained => 1);
+
+
+sub run {
+  my $self = shift;
+  
+  my $alive = AnyEvent->condvar;
+  $self->alive($alive);
+  
+  $alive->recv;
+  
+  return;
+}
 
 
 42; # End of App::Rasputine
