@@ -12,5 +12,6 @@ App-Rasputine TODO list
  * support IQ Disco;
  * FrenchEncoding filter
  * Add script to start it up
+ * Filter for ANSI escape sequences used in some talkers
 
 
