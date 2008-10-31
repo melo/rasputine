@@ -67,8 +67,11 @@ sub close {
   return unless $self->state('connected');
 
   my $conn = $self->{conn};
-  $self->state('offline')->conn(undef);
-  return close($conn->fh);
+  $self->state('offline');
+  $self->conn(undef);
+  close($conn->fh) if $conn->fh;
+  
+  return;
 }
 
 
