@@ -1,0 +1,60 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use FindBin;
+use Config::Any;
+use Getopt::Long;
+
+##############
+# Load the App
+
+my $lib = "$FindBin::Bin/../lib";
+unshift @INC, $lib;
+require App::Rasputine;
+
+
+#######################
+# Process configuration
+
+my ($cfg_file);
+my $ok = GetOptions(
+  "config=s" => \$cfg_file,
+);
+usage() unless $ok;
+
+
+########################
+# Load the configuration
+
+usage('A config file is required') unless $cfg_file;
+
+my $cfgs = Config::Any->load_files({ files => [ $cfg_file ], use_ext => 1 });
+my $config = (%{$cfgs->[0]})[1];
+
+
+############################
+# Start the Rasputine server
+
+my $ras = App::Rasputine->new($config);
+$ras->run;
+
+exit(0);
+
+
+#######
+# Usage
+
+sub usage {
+  my ($mesg) = @_;
+  
+  print STDERR <<USAGE;
+
+Usage: rasputine --config=FILE
+
+USAGE
+
+  print STDERR "ERROR: $mesg\n" if $mesg;
+  
+  exit(1);
+}
