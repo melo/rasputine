@@ -19,6 +19,25 @@ __PACKAGE__->attr('services', chained => 1, default => {});
 __PACKAGE__->attr('xmpp_gw');
 
 
+################
+# Service access
+
+sub service {
+  my ($self, $service) = @_;
+  my $srvs = $self->services;
+
+  return undef unless $srvs->{$service};
+  return $srvs->{$service};
+}
+
+sub is_valid_service {
+  my $self = shift;
+  
+  return 1 if defined $self->service(@_);
+  return;
+}
+
+
 #################
 # Session manager
 
