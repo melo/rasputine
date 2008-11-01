@@ -186,7 +186,7 @@ sub message_out {
   
   # IM doesn't need the trailing \n and some talkers use \r\n
   my $mesg = $args{mesg};
-  $mesg =~ s/\r?\n$//gsm;
+  $mesg =~ s/\r?\n\z//sm;
   return unless $mesg;
   
   # Try to encode as utf8 and then latin1
