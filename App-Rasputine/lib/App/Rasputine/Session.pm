@@ -151,9 +151,9 @@ sub parse_commands {
   });
   my $mesg = $args{mesg};
   
-  my ($cmd) = $mesg =~ m{^\s*//(\w+)};
+  my ($cmd) = $mesg =~ m{^\s*(\w+)};
   if (!$cmd) {
-    $self->send_message_to_user({ mesg => q{Help your self with '//help'} });
+    $self->send_message_to_user({ mesg => q{Help your self with 'help'} });
     return;
   }
   
@@ -196,18 +196,17 @@ Hello there, welcome to Rasputine!
 Each world can be in one of two states: 'offline', or 'connected'.
 All worlds start as 'offline'.
 
-While 'offline', you can use //connect to start a connection to the world.
+While 'offline', you can use 'connect' to start a connection to the world.
 If the connection is sucessful, you become 'connected'.
 
 When you disconnect from the world, you go back to 'offline' mode.
 
 Commands are only accepted while in 'offline' mode.
 
-
 Available commands:
 
-//connect - connects to this world
-//help    - this message again
+  connect - connects to this world
+  help    - this message again
 
 See? Not that many commands :)
 USAGE
