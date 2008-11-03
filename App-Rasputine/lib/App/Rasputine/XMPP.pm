@@ -31,18 +31,41 @@ sub presence_in {
 }
 
 sub send_presence {
-  my ($self, $node, $type) = @_;
-
+  my ($self, $to, $from, $type) = @_;
+  my $ras = $self->{ras};
+  my %attrs;
+  
+  # check to see if we got a node
+  if (ref($to)) {
+    $type = $from;
+    $from = $to->attr('from');
+    $to   = $to->attr('to');
+  }
+  
   # We are online by default
-  my $from = $node->attr('from');
-  my $to   = $node->attr('to');
+  my ($service, $via) = split_jid($to);
+  my $user = bare_jid($from);
+
+  if (!$type || $type eq 'unavailable') {
+    my $srv_cfg = $ras->service($service);
+    
+    my $sess = $ras->session_for({
+      service => $service,
+      user => $user,
+      via => $via,
+    });
+    my $state = 'offline';
+    $state = $sess->state if $sess;
+    
+    my $status = $srv_cfg->{presence}{$state}{status};
+    $attrs{status} = $status if $status;
+    
+    $to .= '/rasputine';
+  }
+  $attrs{to} = $from;
+  $attrs{from} = $to;
   
-  $to .= '/rasputine' if !$type || $type eq 'unavailable';
-  
-  $self->{conn}->send_presence($type, undef, 
-    to => $from,
-    from => $to,
-  );
+  $self->{conn}->send_presence($type, undef, %attrs);
 }
 
 sub presence_probe {
