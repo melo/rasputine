@@ -112,6 +112,9 @@ sub presence_update  {
     type => $node->attr('type'),
   };
   
+  # update our own presence
+  $self->send_presence($node);
+  
   return;
 }
 
