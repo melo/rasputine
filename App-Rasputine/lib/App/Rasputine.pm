@@ -101,6 +101,20 @@ sub user_offline {
   return $user_session->disconnect();
 }
 
+sub service_state {
+  my $self = shift;
+  my %args = validate(@_, {
+    service => { type => SCALAR }, 
+    user    => { type => SCALAR }, 
+    via     => { type => SCALAR }, 
+    state   => { type => SCALAR }, 
+  });
+
+  $self->xmpp_gw->service_state(%args);
+  
+  return;
+}
+
 
 ###################
 # Welcome new users

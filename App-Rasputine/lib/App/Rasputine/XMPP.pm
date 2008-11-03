@@ -228,6 +228,23 @@ sub message_out {
 }
 
 
+################################
+# React to service state changes
+
+sub service_state {
+  my $self = shift;
+  my %args = validate(@_, {
+    service => { type => SCALAR }, 
+    user    => { type => SCALAR }, 
+    via     => { type => SCALAR }, 
+    state   => { type => SCALAR }, 
+  });
+  
+  $self->send_presence("$args{service}\@$args{via}", $args{user});
+  
+  return;
+}
+
 ##########################
 # Get the show on the road
 

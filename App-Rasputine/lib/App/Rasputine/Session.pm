@@ -47,6 +47,13 @@ sub connect {
      );
      $self->conn($conn);
      $conn->push_read(sub { $self->line_in(@_) });
+     
+     $self->{ras}->service_state({
+       service => $self->{service},
+       user    => $self->{user},
+       via     => $self->{via},
+       state   => $self->{state},
+     });
   };
 }
 
@@ -70,6 +77,13 @@ sub close {
   $self->state('offline');
   $self->conn(undef);
   close($conn->fh) if $conn->fh;
+     
+  $self->{ras}->service_state({
+    service => $self->{service},
+    user    => $self->{user},
+    via     => $self->{via},
+    state   => $self->{state},
+  });
   
   return;
 }
