@@ -147,7 +147,6 @@ sub presence_offline {
 sub message_in {
   my ($self, $conn, $node) = @_;
   my $resr = $self->resources;
-  print STDERR "*** XMPP MESSAGE IN\n";
   
   my $from = $node->attr('from');
   my $to   = $node->attr('to');
@@ -170,8 +169,6 @@ sub message_in {
     gateway => 'xmpp',
   });
   return unless $error;
-  
-  print STDERR "*** XMPP MESSAGE IN ERROR! $error\n";
   
   # For now our only message, but should be for error 'service_not_found'
   # if ($error eq 'service_not_found') {}
@@ -209,7 +206,6 @@ sub message_out {
     via     => { type => SCALAR }, 
     gateway => { type => SCALAR }, 
   });
-  print STDERR "*** XMPP MESSAGE OUT $args{service} $args{user}\n";
   
   # IM doesn't need the trailing \n and some talkers use \r\n
   my $mesg = $args{mesg};
