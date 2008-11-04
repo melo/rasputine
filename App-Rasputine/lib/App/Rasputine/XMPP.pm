@@ -256,6 +256,126 @@ sub iq_handler {
 }
 
 
+##########
+# IQ Disco
+
+sub disco_info_request {
+  my ($self, $node) = @_;
+  my $conn = $self->conn;
+  my $q = ($node->nodes)[0];
+  
+  my $type = $node->attr('type');
+  if (!$type) {
+    $conn->reply_iq_error($node, 'cancel', 'bad-request')
+  }
+  elsif ($type eq 'set') {
+    $conn->reply_iq_error($node, 'cancel', 'service-unavailable')
+  }
+  elsif ($type eq 'get') {
+    my $to = $node->attr('to');
+    my ($bot, $domain, $resource) = split_jid($to);
+    my ($ids, $feats) = $self->disco_information_for($to);
+    
+    if ($q->attr('node') || !$ids) {
+      $conn->reply_iq_error($node, 'cancel', 'item-not-found');
+    }
+    else {
+      map { $_ = { name => 'identity', attrs => [ %$_       ] } } @$ids;
+      map { $_ = { name => 'feature',  attrs => [ var => $_ ] } } @$feats;
+      
+      # features only for domain or a connected resource
+      # bare JID receives only IDs
+      my @childs = @$ids;
+      push @childs, @$feats if ($bot && $resource) || !$bot;
+      
+      $conn->reply_iq_result($node, {
+        def_ns => 'http://jabber.org/protocol/disco#info',
+        node   => {
+          name => 'query',
+          childs => [ @$ids, @$feats ],
+        },
+      });
+    }
+  }
+  
+  # Don't reply to anything else
+  return 'done';
+}
+
+sub disco_information_for {
+  my ($self, $jid) = @_;
+  my ($bot, $domain, $resource) = split_jid($jid);
+  my (@ids, @feats);
+
+  # All of them support thi
+  push @feats, 'http://jabber.org/protocol/disco#info';
+  
+  if (!$bot) {
+    push @ids, {
+      category => 'gateway',
+      type     => 'telnet',
+      name     => 'Rasputine Moo/MUD/Talker gateway',
+    };
+    push @feats, 'http://jabber.org/protocol/disco#items';
+  }
+  elsif (my $srv = $self->{ras}->service($bot)){
+    push @ids, {
+      category => 'account',
+      type     => 'registered',
+      name     => $srv->{name},
+    };
+  }
+  else {
+    return;
+  }
+  
+  return (\@ids, \@feats);
+}
+
+sub disco_items_request {
+  my ($self, $node) = @_;
+  my $conn = $self->conn;
+  my $q = ($node->nodes)[0];
+  my $to = $node->attr('to');
+  my ($is_bot, $domain) = split_jid($to);
+  
+  my $type = $node->attr('type');
+  if (!$type) {
+    $conn->reply_iq_error($node, 'cancel', 'bad-request')
+  }
+  elsif ($type eq 'set') {
+    $conn->reply_iq_error($node, 'cancel', 'service-unavailable')
+  }
+  elsif ($type eq 'get') {
+    my @items;
+    if (!$q->attr('node') && !$is_bot) {
+      my $srvs = $self->{ras}->services;
+      
+      while (my ($bot, $info) = each %$srvs) {
+        push @items, {
+          name => 'item',
+          attrs => [
+            jid  => "$bot\@$domain",
+            name => $info->{name} || '$bot',
+          ],
+        };
+      }
+    }
+    
+    $conn->reply_iq_result($node, {
+      def_ns => 'http://jabber.org/protocol/disco#items',
+      node   => {
+        name => 'query',
+        childs => \@items,
+      },
+    });
+  }
+  
+  # Don't reply to anything else
+  return 'done';
+}
+
+
 ################################
 # React to service state changes
 
@@ -331,6 +451,14 @@ sub _on_connected {
   
   $conn->set_exception_cb(sub {
     print STDERR "EXCEPTION CAUGTH: $_[0]\n" if $config->{xml_debug};
+  });
+  
+  # Support XEP-0030 discovery
+  $self->iq_handler( 'http://jabber.org/protocol/disco#info', sub {
+    return $self->disco_info_request(@_);
+  });
+  $self->iq_handler( 'http://jabber.org/protocol/disco#items', sub {
+    return $self->disco_items_request(@_);
   });
 
   return;
