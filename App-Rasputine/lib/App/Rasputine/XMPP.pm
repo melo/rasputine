@@ -291,14 +291,23 @@ sub _connect {
 
 sub _on_connected {
   my $self = shift;
+  my $conn = $self->{conn};
+  my $ras  = $self->{ras};
+  my $config = $ras->xmpp;
   
   print STDERR "Connection to XMPP server is live!\n";
   
-  $self->{conn}->reg_cb(
+  $conn->reg_cb(
     recv_stanza_xml => sub { $self->_on_stanza(@_) },
     message_xml     => sub { $self->message_in(@_) },
     presence_xml    => sub { $self->presence_in(@_) },
   );
+  
+  $conn->set_exception_cb(sub {
+    print STDERR "EXCEPTION CAUGTH: $_[0]\n" if $config->{xml_debug};
+  });
+
+  return;
 }
 
 sub _on_disconnect {
