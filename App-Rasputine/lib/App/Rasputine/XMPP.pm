@@ -298,9 +298,9 @@ sub _on_connected {
   print STDERR "Connection to XMPP server is live!\n";
   
   $conn->reg_cb(
-    recv_stanza_xml => sub { $self->_on_stanza(@_) },
-    message_xml     => sub { $self->message_in(@_) },
-    presence_xml    => sub { $self->presence_in(@_) },
+    recv_stanza_xml => sub { return $self->_on_stanza(@_) },
+    message_xml     => sub { return $self->message_in(@_) },
+    presence_xml    => sub { return $self->presence_in(@_) },
   );
   
   $conn->set_exception_cb(sub {
@@ -332,20 +332,22 @@ sub _on_disconnect {
 
 sub _on_stanza {
   my ($self, $conn, $node) = @_;
+  my $done;
   
   if ($node->eq(component => 'iq')) {
-    $conn->event(iq_xml => $node);
-    $conn->handle_iq($node);
+    $done = $conn->event(iq_xml => $node);
+    $conn->handle_iq($node) unless $done;
   }
   elsif ($node->eq(component => 'message')) {
-    $conn->event(message_xml => $node);
+    $done = $conn->event(message_xml => $node);
   }
   elsif ($node->eq(component => 'presence')) {
-    $conn->event(presence_xml => $node);
+    $done = $conn->event(presence_xml => $node);
   }
   
-  return;
+  return $done;
 }
+
 
 42; # End of App::Rasputine::XMPP
 
