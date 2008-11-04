@@ -16,6 +16,7 @@ requires 'Params::Validate' => 0;
 requires 'Config::Any' => 0;
 requires 'Getopt::Long' => 0;
 requires 'MIME::Base64' => 0;
+requires 'Digest::SHA1' => 0;
 
 build_requires 'Test::More';
 

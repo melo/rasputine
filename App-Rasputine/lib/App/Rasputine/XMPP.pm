@@ -8,6 +8,7 @@ use Net::XMPP2::Util qw( split_jid bare_jid );
 use Params::Validate qw( :all );
 use Encode qw( encode decode );
 use MIME::Base64;
+use Digest::SHA1 qw( sha1_hex );
 
 our $VERSION = '0.1';
 
