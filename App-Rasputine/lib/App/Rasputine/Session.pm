@@ -174,7 +174,7 @@ sub parse_commands {
   if ($cmd eq 'help') {
     $self->send_help;
   }
-  elsif ($cmd eq 'connect') {
+  elsif ($cmd eq 'connect' || $cmd eq 'ligar') {
     $self->connect;
   }
   else {
