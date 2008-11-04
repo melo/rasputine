@@ -84,6 +84,7 @@ sub start_session {
   return $sess;
 }
 
+
 #########################
 # Deal with user presence
 
