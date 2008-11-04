@@ -13,6 +13,7 @@ our $VERSION = '0.1';
 __PACKAGE__->attr('ras', chained => 1);
 __PACKAGE__->attr('conn', chained => 1);
 __PACKAGE__->attr('resources', default => {});
+__PACKAGE__->attr('namespace_map', default => {});
 
 #####################
 # Presence processing
@@ -231,6 +232,32 @@ sub message_out {
 }
 
 
+#############
+# IQ handling
+
+sub iq_in {
+  my ($self, $conn, $node) = @_;
+  
+  my $nodes = $node->nodes;
+  my $q = ($node->nodes)[0];
+  return unless $q;
+
+  my $ns = $q->namespace;
+  my $ns_map = $self->namespace_map;
+  return if exists $ns_map->{$ns};
+  
+  return $ns_map->{$ns}->($node);
+}
+
+sub iq_handler {
+  my ($self, $ns, $cb) = @_;
+  
+  $self->namespace_map->{$ns} = $cb;
+  
+  return;
+}
+
+
 ################################
 # React to service state changes
 
@@ -301,6 +328,7 @@ sub _on_connected {
     recv_stanza_xml => sub { return $self->_on_stanza(@_) },
     message_xml     => sub { return $self->message_in(@_) },
     presence_xml    => sub { return $self->presence_in(@_) },
+    iq_xml          => sub { return $self->iq_in(@_) },
   );
   
   $conn->set_exception_cb(sub {
@@ -316,7 +344,10 @@ sub _on_disconnect {
   print STDERR "XMPP component lost connection... Reconnecting...\n";
 
   # Destroy old connection
-  $self->{conn} = undef;
+  $self->conn(undef);
+  
+  # Clear IQ handlers
+  $self->namespace_map(undef);
   
   # Assume auto-reconnect
   my $delay; $delay = AnyEvent->timer(
