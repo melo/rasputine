@@ -47,6 +47,9 @@ sub send_presence {
   # We are online by default
   my ($service, $via) = split_jid($to);
   my $user = bare_jid($from);
+  
+  # XEP-0153 support
+  my $avatar;
 
   if (!$type || $type eq 'unavailable') {
     my $srv_cfg = $ras->service($service);
@@ -63,11 +66,25 @@ sub send_presence {
     $attrs{status} = $status if $status;
     
     $to .= '/rasputine';
+    
+    # XEP-0153 support
+    if (($avatar) = $self->avatar_for($service)) {
+      $avatar = {
+        defns => 'vcard-temp:x:update',
+        node => {
+          name => 'x',
+          childs => [
+            { name => 'photo', childs => [ $avatar ] }
+          ],
+        },
+      } 
+    }
   }
+  
   $attrs{to} = $from;
   $attrs{from} = $to;
   
-  $self->{conn}->send_presence($type, undef, %attrs);
+  $self->{conn}->send_presence($type, $avatar, %attrs);
 }
 
 sub presence_probe {
