@@ -7,6 +7,7 @@ use Net::XMPP2::Component;
 use Net::XMPP2::Util qw( split_jid bare_jid );
 use Params::Validate qw( :all );
 use Encode qw( encode decode );
+use MIME::Base64;
 
 our $VERSION = '0.1';
 
@@ -324,6 +325,7 @@ sub disco_information_for {
       type     => 'registered',
       name     => $srv->{name},
     };
+    push @feats, 'vcard-temp';
   }
   else {
     return;
@@ -373,6 +375,153 @@ sub disco_items_request {
   
   # Don't reply to anything else
   return 'done';
+}
+
+
+####################
+# vCard-based Avatar
+
+sub vcard_request {
+  my ($self, $node) = @_;
+  my $conn = $self->{conn};
+  my $type = $node->attr('type');
+  $type = '' unless $type;
+  
+  if ($type eq 'set') {
+    $conn->reply_iq_error($node, 'cancel', 'service-unavailable')
+  }
+  elsif ($type eq 'get') {
+    my ($bot, $domain, $resource) = split_jid($node->attr('to'));
+    my $srv = $self->{ras}->service($bot);
+    
+    if ($bot && !$srv) {
+      $conn->reply_iq_error($node, 'cancel', 'not-found')
+    }
+    elsif ($resource || !$bot) {
+      $conn->reply_iq_error($node, 'cancel', 'service-unavailable')
+    }
+    else {
+      $conn->reply_iq_result($node, $self->vcard_for($bot));
+    }
+  }
+  
+  return 'done';
+}
+
+sub vcard_for {
+  my ($self, $bot) = @_;
+  my $srv = $self->{ras}->service($bot);
+  
+  return unless $srv;
+  
+  my @vcard;
+  push @vcard, { name => 'FN', childs => [ $srv->{name} || $bot ] };
+  
+  my ($hash, $photo) = $self->avatar_for($bot);
+  if ($photo) {
+    push @vcard, { name => 'PHOTO', childs => [
+      { name => 'TYPE',   childs => [ 'image/png' ] },
+      { name => 'BINVAL', childs => [ $photo      ] },
+    ]};
+  }
+  
+  return {
+    def_ns => 'vcard-temp',
+    node => {
+      name => 'vCard',
+      childs => \@vcard,
+    }
+  };
+}
+
+
+################
+# Avatar support
+
+my $def_hash = 'e2be2e92750a8abe41be3010fd41959f21e5bfd9';
+my $def_avatar = <<AVATAR;
+/9j/4AAQSkZJRgABAQAAAQABAAD//gA7Q1JFQVRPUjogZ2QtanBlZyB2MS4wICh1c2luZyBJSkcg
+SlBFRyB2NjIpLCBxdWFsaXR5ID0gNjAK/9sAQwANCQoLCggNCwoLDg4NDxMgFRMSEhMnHB4XIC4p
+MTAuKS0sMzpKPjM2RjcsLUBXQUZMTlJTUjI+WmFaUGBKUVJP/9sAQwEODg4TERMmFRUmTzUtNU9P
+T09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09P/8AAEQgAgACA
+AwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMF
+BQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkq
+NDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqi
+o6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/E
+AB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMR
+BAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVG
+R0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKz
+tLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/aAAwDAQACEQMRAD8A
+9G27RSYB7UpYkYNJQAACjCk4FFFADioA60zihmxUbP6mgCTnvikbGCK5jWNU1JtRgsbArCsrbTKy
+7iPp2q1A95Zptup5JpTwWJGD7jAoA3lUClrCOuJbS7bkfKMZYdvrWzDPHOgeJ1ZGGVIPBoAkIz1p
+No9KdRQA3aBSEEDpmnGk57UAMxTWOAaWmt0NAE9FFID7UAL0pCT2FFKKAK17cxWNtJdXDBY4xkn1
+9BXLaT4iN/eyeaNoP3R2qt8S79o47SwQkbyZXHsOB/WuV8PW+p3l4semoxYfec8Kv1NAHYzwyS6i
+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
+AVATAR
+
+sub avatar_for {
+  my ($self, $bot) = @_;
+  my $srv = $self->{ras}->service($bot);
+  
+  return unless $srv;
+  
+  my ($hash, $photo);
+  if (my $p = $srv->{photo}) {
+    if (open(my $fh, '<', $p->{filename})) {
+      local $/;
+      $photo = <$fh>;
+      close($fh);
+      
+      if ($photo) {
+        $hash  = sha1_hex($photo);
+        $photo = encode_base64($photo);
+      }
+    }
+    else {
+      print STDERR "ATTN! Could not open '$p->{filename}': $!\n";
+    }
+  }
+  
+  if (!$hash) {
+    $hash  = $def_hash;
+    $photo = $def_avatar;
+  }
+  
+  return ($hash, $photo);
 }
 
 
@@ -459,6 +608,11 @@ sub _on_connected {
   });
   $self->iq_handler( 'http://jabber.org/protocol/disco#items', sub {
     return $self->disco_items_request(@_);
+  });
+  
+  # Support for XEP-0054
+  $self->iq_handler( 'vcard-temp', sub {
+    return $self->vcard_request(@_);
   });
 
   return;
@@ -590,4 +744,3 @@ Copyright 2008 Pedro Melo.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
-
