@@ -64,7 +64,9 @@ sub send_presence {
     $state = $sess->state if $sess;
     
     my $status = $srv_cfg->{presence}{$state}{status};
-    $attrs{status} = $status if $status;
+    eval {
+      $attrs{status} = decode('utf8', $status, 1) if $status;
+    };
     
     $to .= '/rasputine';
     
