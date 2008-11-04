@@ -415,7 +415,9 @@ sub vcard_for {
   return unless $srv;
   
   my @vcard;
-  push @vcard, { name => 'FN', childs => [ $srv->{name} || $bot ] };
+  push @vcard, { name => 'FN',  childs => [ $srv->{name} || $bot ] };
+  push @vcard, { name => 'URL', childs => [ $srv->{homepage} ] }
+    if exists $srv->{homepage};
   
   my ($hash, $photo) = $self->avatar_for($bot);
   if ($photo) {
