@@ -71,7 +71,7 @@ sub send_presence {
     $to .= '/rasputine';
     
     # XEP-0153 support
-    if (($avatar) = $self->avatar_for($service)) {
+    if (($avatar) = $self->avatar_for($to, $from)) {
       $avatar = {
         defns => 'vcard-temp:x:update',
         node => {
@@ -421,7 +421,7 @@ sub vcard_request {
       $conn->reply_iq_error($node, 'cancel', 'service-unavailable')
     }
     else {
-      $conn->reply_iq_result($node, $self->vcard_for($bot));
+      $conn->reply_iq_result($node, $self->vcard_for($node));
     }
   }
   
@@ -429,7 +429,9 @@ sub vcard_request {
 }
 
 sub vcard_for {
-  my ($self, $bot) = @_;
+  my ($self, $node) = @_;
+  my ($to, $from) = ($node->attr('to'), $node->attr('from'));
+  my ($bot) = split_jid($to);
   my $srv = $self->{ras}->service($bot);
   
   return unless $srv;
@@ -439,7 +441,7 @@ sub vcard_for {
   push @vcard, { name => 'URL', childs => [ $srv->{homepage} ] }
     if exists $srv->{homepage};
   
-  my ($hash, $photo) = $self->avatar_for($bot);
+  my ($hash, $photo) = $self->avatar_for($to, $from);
   if ($photo) {
     push @vcard, { name => 'PHOTO', childs => [
       { name => 'TYPE',   childs => [ 'image/png' ] },
@@ -516,13 +518,29 @@ V1GW9n25KxrwqZoAtyXct/MfLBCipGUQR5J5xUVgQI1ULkn0qS/ZY4txXAPrQBkTvuOR612fw4uG
 AVATAR
 
 sub avatar_for {
-  my ($self, $bot) = @_;
-  my $srv = $self->{ras}->service($bot);
-  
+  my ($self, $to, $from) = @_;
+  my $ras = $self->{ras};
+
+  my ($service, $via) = split_jid($to);
+  my $user = bare_jid($from);
+
+  my $srv = $ras->service($service);
   return unless $srv;
+
+  my $sess = $ras->session_for({
+    service => $service,
+    user => $user,
+    via => $via,
+  });
+  my $state = 'offline';
+  $state = $sess->state if $sess;
+  
+  my $p;
+  $p = $srv->{photo}                   if exists $srv->{photo};
+  $p = $srv->{presence}{$state}{photo} if exists $srv->{presence}{$state}{photo};
   
   my ($hash, $photo);
-  if (my $p = $srv->{photo}) {
+  if ($p) {
     if (open(my $fh, '<', $p->{filename})) {
       local $/;
       $photo = <$fh>;
