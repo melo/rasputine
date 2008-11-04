@@ -239,8 +239,10 @@ sub iq_in {
   return unless $q;
 
   my $ns = $q->namespace;
+  return unless $ns;
+  
   my $ns_map = $self->namespace_map;
-  return if exists $ns_map->{$ns};
+  return unless exists $ns_map->{$ns};
   
   return $ns_map->{$ns}->($node);
 }
