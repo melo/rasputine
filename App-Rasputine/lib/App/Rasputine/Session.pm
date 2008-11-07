@@ -76,7 +76,6 @@ sub close {
   my $conn = $self->{conn};
   $self->state('offline');
   $self->conn(undef);
-  close($conn->fh) if $conn->fh;
      
   $self->{ras}->service_state({
     service => $self->{service},
