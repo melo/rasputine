@@ -310,7 +310,7 @@ sub disco_info_request {
       push @childs, @$feats if ($bot && $resource) || !$bot;
       
       $conn->reply_iq_result($node, {
-        def_ns => 'http://jabber.org/protocol/disco#info',
+        defns => 'http://jabber.org/protocol/disco#info',
         node   => {
           name => 'query',
           childs => [ @$ids, @$feats ],
@@ -385,7 +385,7 @@ sub disco_items_request {
     }
     
     $conn->reply_iq_result($node, {
-      def_ns => 'http://jabber.org/protocol/disco#items',
+      defns => 'http://jabber.org/protocol/disco#items',
       node   => {
         name => 'query',
         childs => \@items,
@@ -450,7 +450,7 @@ sub vcard_for {
   }
   
   return {
-    def_ns => 'vcard-temp',
+    defns => 'vcard-temp',
     node => {
       name => 'vCard',
       childs => \@vcard,
