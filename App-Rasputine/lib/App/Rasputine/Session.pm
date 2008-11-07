@@ -18,6 +18,8 @@ __PACKAGE__->attr('via');
 __PACKAGE__->attr('world');
 __PACKAGE__->attr('ras');
 
+__PACKAGE__->attr('filters', default => []);
+
 __PACKAGE__->attr('state', default => 'start');
 
 
@@ -39,7 +41,9 @@ sub connect {
      }
      
      $self->state('connected');
-
+     
+     $self->load_plugins;
+     
      my $conn = AnyEvent::Handle->new(
        fh       => $fh,
        on_eof   => sub { $self->close('eof')   },
@@ -88,6 +92,28 @@ sub close {
 }
 
 
+#########
+# Plugins
+
+sub load_plugins {
+  my $self = shift;
+  
+  # get the filters ready
+  my $filters = $self->filters;
+  foreach my $plugin (@$filters) {
+    eval "require $plugin;";
+    if ($@) {
+      print STDERR "Could not load plugin '$plugin': $@\n";
+      next;
+    }
+    
+    $plugin = $plugin->new;
+  }
+
+  return;
+}
+
+
 ##########
 # World IO
 
@@ -95,6 +121,12 @@ sub line_out {
   my ($self, $line) = @_;
   
   return unless $self->state eq 'connected';
+  
+  my $filters = $self->filters;
+  foreach my $plugin (@$filters) {
+    next unless ref $plugin;
+    $line = $plugin->to_world($line);
+  }
   
   $self->{conn}->push_write($line."\n");
 }
@@ -104,6 +136,12 @@ sub line_in {
 
   my $line = delete $handle->{rbuf};
   return unless $line;
+  
+  my $filters = $self->filters;
+  foreach my $plugin (@$filters) {
+    next unless ref $plugin;
+    $line = $plugin->from_world($line);
+  }
   
   my $buffer = $self->{buffer};
   if ($buffer) { $buffer .= $line }
