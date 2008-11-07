@@ -44,11 +44,15 @@ sub connect {
      
      $self->load_plugins;
      
-     my $conn = AnyEvent::Handle->new(
+     my %args = (
        fh       => $fh,
        on_eof   => sub { $self->close('eof')   },
        on_error => sub { $self->close('error') },
      );
+     $args{tls} = 'connect' if $world->{tls};
+     
+     my $conn = AnyEvent::Handle->new(%args);
+     
      $self->conn($conn);
      $conn->push_read(sub { $self->line_in(@_) });
      
