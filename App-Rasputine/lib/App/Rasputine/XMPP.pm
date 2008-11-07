@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use base qw( Mojo::Base );
 use Net::XMPP2::Component;
-use Net::XMPP2::Util qw( split_jid bare_jid );
+use Net::XMPP2::Util qw( split_jid bare_jid dump_twig_xml );
 use Params::Validate qw( :all );
 use Encode qw( encode decode );
 use MIME::Base64;
@@ -612,8 +612,8 @@ sub _connect {
   );
   
   $conn->reg_cb(
-    debug_recv   => sub { print STDERR "IN:  $_[1]\n" },
-    debug_send   => sub { print STDERR "OUT: $_[1]\n" },
+    debug_recv   => sub { print STDERR "IN:\n",dump_twig_xml($_[1]),"\n" },
+    debug_send   => sub { print STDERR "OUT:\n",dump_twig_xml($_[1]),"\n" },
   ) if $config->{xml_debug};
     
   $conn->connect;
