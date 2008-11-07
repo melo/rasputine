@@ -74,10 +74,12 @@ sub start_session {
 
   my $valid_services = $self->services;
   return 'service_not_found' unless exists $valid_services->{$args{service}};
+  my $srv = $valid_services->{$args{service}};
   
   my $sess = $sessions->{$args{user}}{$args{service}} = App::Rasputine::Session->new({
     %args,
     ras => $self,
+    filters => ($srv->{filters} || []),
   });
   $sess->start if $sess;
   
