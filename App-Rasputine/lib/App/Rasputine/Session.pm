@@ -134,7 +134,7 @@ sub line_out {
   my $filters = $self->filters;
   foreach my $plugin (@$filters) {
     next unless ref $plugin;
-    $line = $plugin->to_world($line);
+    $line = $plugin->to_world($line, $self);
   }
   
   $self->{conn}->push_write($line."\n");
@@ -149,7 +149,7 @@ sub line_in {
   my $filters = $self->filters;
   foreach my $plugin (@$filters) {
     next unless ref $plugin;
-    $line = $plugin->from_world($line);
+    $line = $plugin->from_world($line, $self);
   }
   
   my $buffer = $self->{buffer};
