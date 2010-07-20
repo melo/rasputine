@@ -15,4 +15,18 @@ sub to_world {
   return $bytes;
 }
 
+sub from_world {
+  my ($self, $raw, $session) = @_;
+  my $stash = $session->stash;
+
+  return $raw if $stash->{plugin_moo_ascii_bin_connected};
+
+  if ($raw =~ m/^#\$#mcp version: \d+[.]\d+/) {
+    $stash->{plugin_moo_ascii_bin_connected}++; 
+    $session->line_out('@client-options charset=utf-8');
+  }
+
+  return $raw;
+}
+
 1;
