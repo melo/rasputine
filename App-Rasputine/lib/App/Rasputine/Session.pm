@@ -22,6 +22,8 @@ __PACKAGE__->attr('filters', default => []);
 
 __PACKAGE__->attr('state', default => 'start');
 
+__PACKAGE__->attr('stash');
+
 
 #############################
 # World connection management
@@ -41,6 +43,9 @@ sub connect {
      }
      
      $self->state('connected');
+
+     my %stash;
+     $self->stash(\%stash);
      
      $self->load_plugins;
      
